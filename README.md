@@ -1,5 +1,7 @@
 # Return of Reckoning Launcher
-This project is an attempt to provide a better, open-source, alternative to the official Return of Reckoning Launcher.
+This project is an attempt to provide a better, open source, alternative to the official Return of Reckoning Launcher.
+
+![Screenshot](http://i.imgur.com/YTGiy1M.png)
 
 It features the following over the current official one as of Feb 27 2017:
 
