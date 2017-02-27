@@ -1,0 +1,47 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="RoRLauncher.PopupWindow" Title="Return of Reckoning Launcher - An Error Occurred" Height="267" Width="444" WindowStyle="None" ResizeMode="NoResize" MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="icon.ico" Activated="Window_Activated" Deactivated="Window_Deactivated">
+    <Grid>
+        <Canvas x:Name="launcher_POPUP_ERROR" ClipToBounds="True" HorizontalAlignment="Left" Height="267" VerticalAlignment="Top" Width="444">
+            <Canvas x:Name="BACKGROUND" Height="267" Canvas.Left="0" Canvas.Top="0" Width="444">
+                <Image x:Name="BackgroundImage" Height="267" Canvas.Left="0" Source="Images_Popup/Popup_Background.png" Canvas.Top="0" Width="444" />
+                <Image x:Name="Background_Highlighter" Height="267" Canvas.Left="0" Source="Images_Popup/Background_Highlight.png" Canvas.Top="0" Width="444" Stretch="Fill" Opacity="0.5" d:IsHidden="True" />
+                <Image x:Name="Rectangle_Border" Height="259" Canvas.Left="4" Opacity="0.502" Source="Images_Popup/Rectangle_Border_Popup.png" Canvas.Top="4" Width="436" />
+            </Canvas>
+            <Canvas x:Name="ERROR_OCCURED" Height="202" Canvas.Left="9" Canvas.Top="12" Width="425">
+                <TextBlock x:Name="CLOSE_BUTTON" TextBlock.Foreground="#FFFFD847" TextBlock.FontSize="31.02493" TextBlock.FontFamily="FuturaBT-Light" IsHyphenationEnabled="True" TextBlock.LineStackingStrategy="BlockLineHeight" Canvas.Left="407" TextBlock.LineHeight="31.02493" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Text="X" Canvas.Top="-0.345" MouseLeftButtonDown="CLOSE_BUTTON_MouseLeftButtonDown">
+                    <TextBlock.RenderTransform>
+                        <ScaleTransform ScaleY="0.735" ScaleX="1" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+                <Image x:Name="ErrorMessageOutlineImage" Height="136" Canvas.Left="0" Opacity="0.302" Source="Images_Popup/Frame_Error_Border.png" Canvas.Top="66" Width="425" />
+                <ScrollViewer x:Name="myScroll" Width="380" Opacity="0.65" Canvas.Left="11.593" Canvas.Top="83.867" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" Height="100" ScrollChanged="myScroll_ScrollChanged">
+                    <Grid x:Name="Grid">
+                        <TextBlock x:Name="error_MSG" TextBlock.FontFamily="FuturaBT-Light" TextBlock.Foreground="#FFFFD847" IsHyphenationEnabled="True" TextBlock.LineHeight="12.5" TextBlock.LineStackingStrategy="BlockLineHeight" Text="Awaiting data" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Margin="0,2,0,0" FontSize="14" />
+                    </Grid>
+                </ScrollViewer>
+                <TextBlock x:Name="ScrollDown" TextBlock.Foreground="#FFFFD847" TextBlock.FontSize="31.02493" TextBlock.FontFamily="FuturaBT-ExtraBlack" IsHyphenationEnabled="True" TextBlock.LineStackingStrategy="BlockLineHeight" Canvas.Left="403.174" TextBlock.LineHeight="31.02493" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Text="&gt;" Canvas.Top="181.999" MouseLeftButtonDown="ScrollDown_MouseLeftButtonDown">
+                    <TextBlock.RenderTransform>
+                        <MatrixTransform Matrix="0,0.537,0.537,0,0,0" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+                <TextBlock x:Name="ScrollUp" TextBlock.Foreground="#FFFFD847" TextBlock.FontSize="31.02493" TextBlock.FontFamily="FuturaBT-ExtraBlack" IsHyphenationEnabled="True" TextBlock.LineStackingStrategy="BlockLineHeight" Canvas.Left="403" TextBlock.LineHeight="31.02493" Opacity="0.302" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Text="&gt;" Canvas.Top="68" MouseLeftButtonDown="ScrollUp_MouseLeftButtonDown">
+                    <TextBlock.RenderTransform>
+                        <MatrixTransform Matrix="0,-0.537,0.537,0,0,15.5125" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+                <TextBlock x:Name="TitleWarningTextBlock" TextBlock.Foreground="#FFFFD847" TextBlock.FontSize="31.02493" TextBlock.FontFamily="FTVHeldustrySC-Regular" IsHyphenationEnabled="True" TextBlock.LineStackingStrategy="BlockLineHeight" Canvas.Left="2.677" TextBlock.LineHeight="31.02493" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Text="AN ERROR OCCURRED..." Canvas.Top="37.056">
+                    <TextBlock.RenderTransform>
+                        <ScaleTransform ScaleY="1.078" ScaleX="1.078" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Canvas>
+            <Canvas x:Name="CopyToClipboardCanvas" Height="37" Canvas.Left="255" Canvas.Top="220" Width="179" MouseLeftButtonDown="CopyToClipboardCanvas_MouseLeftButtonDown" MouseEnter="CopyToClipboardCanvas_MouseEnter" MouseLeave="CopyToClipboardCanvas_MouseLeave">
+                <TextBlock x:Name="CopyToClipboardText" TextBlock.Foreground="#FFFF0000" TextBlock.FontSize="31.02493" TextBlock.FontFamily="FuturaBT-Light" IsHyphenationEnabled="True" TextBlock.LineStackingStrategy="BlockLineHeight" Canvas.Left="8.593" TextBlock.LineHeight="31.02493" TextBlock.TextAlignment="Left" TextWrapping="Wrap" Text="COPY TO CLIPBOARD" Canvas.Top="12.969">
+                    <TextBlock.RenderTransform>
+                        <ScaleTransform ScaleY="0.537" ScaleX="0.537" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+                <Image x:Name="CopyToClipboardImage" Height="37" Canvas.Left="0" Source="Images_Popup/Frame_Button_Red_Popup.png" Canvas.Top="0" Width="179" Stretch="Fill" />
+            </Canvas>
+        </Canvas>
+    </Grid>
+</Window>
