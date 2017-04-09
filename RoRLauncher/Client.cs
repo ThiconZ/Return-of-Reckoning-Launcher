@@ -474,6 +474,31 @@ namespace RoRLauncher
                             // Minimize the launcher once the game process is started
                             MainWindow.mainWindow.ModifyWindowState(System.Windows.WindowState.Minimized);
                         }
+                        catch (System.UnauthorizedAccessException ex)
+                        {
+                            if (MainWindow.mainWindow.NoErrorMode == false)
+                                Client.Popup("Access to WAR.exe is denied. Please obtain access permissions to the Warhammer directory and files and try again: " + Environment.NewLine + ex.ToString());
+                            else
+                                Client.Print("Error starting game. User lacks file access permissions");
+
+                            // Prompt the user to restart the launcher as admin - this normally fixes this error
+                            if (MainWindow.mainWindow.IsAdministrator() == false)
+                            {
+                                if (System.Windows.MessageBox.Show("Running the launcher as Administrator may resolve this error. Would you like to restart it as Administrator now?", "Restart as Administrator", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                                {
+                                    MainWindow.mainWindow.RestartAsAdmin();
+                                }
+                            }
+                            else
+                            {
+                                if (System.Windows.MessageBox.Show("Removing the Read-Only attribute from files in the game directory may resolve this error. Would you like to remove this attribute and restart the application now? Note this will also restart the application as Administrator.", "Remove Read-Only Attribute", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                                {
+                                    // User must have read/write access to the directory for this to be allowed
+                                    MainWindow.mainWindow.RemoveReadOnly(new DirectoryInfo(System.IO.Directory.GetCurrentDirectory()));
+                                    MainWindow.mainWindow.RestartAsAdmin();
+                                }                                
+                            }
+                        }
                         catch (System.Exception ex)
                         {
                             if (MainWindow.mainWindow.NoErrorMode == false)

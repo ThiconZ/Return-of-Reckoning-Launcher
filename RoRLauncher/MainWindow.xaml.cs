@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +33,10 @@ namespace RoRLauncher
         private int PasswordMode;
 
         public bool NoErrorMode = false;
+
+        public bool CustomDependencyMode = false;
+
+        public bool CheckDependencyHashes = false;
 
         internal string Error
         {
@@ -104,18 +109,7 @@ namespace RoRLauncher
             }
             else
             {
-                XElement arg_170_0;
-                if (this.doc.Descendants("News").Count<XElement>() <= 0)
-                {
-                    arg_170_0 = null;
-                }
-                else
-                {
-                    arg_170_0 = (from n in this.doc.Descendants("News")
-                                 orderby (uint)n.Element("Id") descending
-                                 select n).First<XElement>();
-                }
-                XElement xElement2 = arg_170_0;
+                XElement xElement2 = this.doc.Descendants((XName)"News").Count<XElement>() > 0 ? this.doc.Descendants((XName)"News").OrderByDescending<XElement, uint>((Func<XElement, uint>)(n => (uint)n.Element((XName)"Id"))).First<XElement>() : (XElement)null;
                 if (xElement2 != null)
                 {
                     this.PatchTitle.Text = (string)xElement2.Element("Date");
@@ -210,19 +204,60 @@ namespace RoRLauncher
             }
         }
 
-        private bool CheckForDependency(string fileName)
+        /// <summary>
+        /// Compares the Internal and External dependecy file versions.
+        /// </summary>
+        /// <param name="fileName">Complete file name and extension of the dependency. Must be the same internally and externally.</param>
+        /// <returns>Returns False if Internal version is grater than or equal to External version.</returns>
+        private bool CompareDependencyFileVersion(string fileName)
+        {
+            // Load the dependency files in a way that won't lock them from future use
+
+            FileVersionInfo externalFile = FileVersionInfo.GetVersionInfo(Directory.GetCurrentDirectory() + "/" + fileName);
+            Version externalVersion = new Version(externalFile.FileVersion);
+
+            Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("RoRLauncher.deps." + fileName);
+            byte[] bytes = new byte[stream.Length];
+            stream.Read(bytes, 0, bytes.Length);
+            stream.Close();
+            stream.Dispose();
+            Version internalVersion = new Version(Assembly.ReflectionOnlyLoad(bytes).GetName().Version.ToString());
+
+            // Returns false if internal file version is greater than or equal to the external file
+            if (internalVersion >= externalVersion)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Check if dependency file already exists. If it does, determine if it should be replaced by the internal dependency file.
+        /// </summary>
+        /// <param name="fileName">Complete file name and extension of the dependency. Must be the same internally and externally.</param>
+        /// <param name="hashCheck">The check be done based on file hashes and not file versions.</param>
+        /// <returns>Returns False if the file should be replaced.</returns>
+        private bool CheckForDependency(string fileName, bool hashCheck = false)
         {
             // Check if the files we're going to unpack already exist in the current location
             if (File.Exists(Directory.GetCurrentDirectory() + "/" + fileName) == true)
             {
-                // If the files are here, do an md5 check to see if they are the right versions before unpacking new ones
-                // Could change this to be a file version check instead if we want to allow the user to have a modified version of the file as long as it meets the version number requirements
-                byte[] externalHash;
-                byte[] internalHash;
-                externalHash = ComputeFileHash(Directory.GetCurrentDirectory() + "/" + fileName);
-                internalHash = ComputeDependencyHash(fileName);
+                if (hashCheck == false)
+                {
+                    // If CompareDependencyFileVersion is false then we should replace the external file with the internal one
+                    return CompareDependencyFileVersion(fileName);
+                }
+                else
+                {
+                    // If the files are here, do an md5 check to see if they are the right versions before unpacking new ones
+                    byte[] externalHash;
+                    byte[] internalHash;
+                    externalHash = ComputeFileHash(Directory.GetCurrentDirectory() + "/" + fileName);
+                    internalHash = ComputeDependencyHash(fileName);
 
-                return externalHash.SequenceEqual(internalHash);
+                    return externalHash.SequenceEqual(internalHash);
+                }
             }
             else
             {
@@ -234,15 +269,15 @@ namespace RoRLauncher
         {
             // Do safe unpacking of dependencies
             // If one happens to be locked open in another program and is the right version it will still work this way, previously it would throw an error
-            if (CheckForDependency("HashDictionary.dll") == false)
+            if (CheckForDependency("HashDictionary.dll", CheckDependencyHashes) == false)
             {
                 this.Unpack("HashDictionary.dll");
             }
-            if (CheckForDependency("MYPHandler.dll") == false)
+            if (CheckForDependency("MYPHandler.dll", CheckDependencyHashes) == false)
             {
                 this.Unpack("MYPHandler.dll");
             }
-            if (CheckForDependency("ICSharpCode.SharpZipLib.dll") == false)
+            if (CheckForDependency("ICSharpCode.SharpZipLib.dll", CheckDependencyHashes) == false)
             {
                 this.Unpack("ICSharpCode.SharpZipLib.dll");
             }
@@ -300,12 +335,6 @@ namespace RoRLauncher
             // Pull status/connection information from the server
             this.ConnectToServers();
 
-            // Unpack required library dependencies to the current directory
-            // NOTE: these are never cleaned up by the program - maybe it should try to delete them when closed?
-            BackgroundWorker backgroundWorker2 = new BackgroundWorker();
-            backgroundWorker2.DoWork += new DoWorkEventHandler(this.worker_Unpack);
-            backgroundWorker2.RunWorkerAsync();
-
             // Make sure the mainWindow is created and visible before moving onto command line options
             // Without this errors will occur from the Debug mode option
             mainWindow.Show();
@@ -325,6 +354,25 @@ namespace RoRLauncher
                 {
                     NoErrorMode = true;
                 }
+                // The user is claiming to be running custom dependency libs so we should not check if internal ones should be unpacked
+                else if (option.ToLower().Contains("--customdeps") == true)
+                {
+                    CustomDependencyMode = true;
+                }
+                // User wants to have the dependency files checked by hashes and not versions
+                else if (option.ToLower().Contains("--checkdephash") == true)
+                {
+                    CheckDependencyHashes = true;
+                }
+            }
+
+            // Unpack required library dependencies to the current directory
+            // NOTE: these are never cleaned up by the program - maybe it should try to delete them when closed?
+            if(CustomDependencyMode == false)
+            {
+                BackgroundWorker backgroundWorker2 = new BackgroundWorker();
+                backgroundWorker2.DoWork += new DoWorkEventHandler(this.worker_Unpack);
+                backgroundWorker2.RunWorkerAsync();
             }
         }
 
@@ -480,11 +528,9 @@ namespace RoRLauncher
 
         private void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
-            double num = double.Parse(e.BytesReceived.ToString());
-            double num2 = double.Parse(e.TotalBytesToReceive.ToString());
-            double num3 = num / num2 * 100.0;
-            this.ProgressBarFiller.Width = (double)((int)System.Math.Floor(num3 * 469.0 / 100.0));
-            this.ProgressText.Text = System.Math.Truncate(num3).ToString() + "%";
+            double progress = (double.Parse(e.BytesReceived.ToString()) / double.Parse(e.TotalBytesToReceive.ToString())) * 100.0;
+            this.ProgressBarFiller.Width = (double)((int)System.Math.Floor(progress * 469.0 / 100.0));
+            this.ProgressText.Text = System.Math.Truncate(progress).ToString() + "%";
         }
 
         private void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
@@ -588,8 +634,29 @@ namespace RoRLauncher
             catch (System.Exception arg)
             {
                 this.Popup("Error unpacking:" + Environment.NewLine + arg);
-                bool result = false;
-                return result;
+
+                if (arg is UnauthorizedAccessException)
+                {
+                    // Prompt the user to restart the launcher as admin - this normally fixes this error
+                    if (IsAdministrator() == false)
+                    {
+                        if (System.Windows.MessageBox.Show("Running the launcher as Administrator may resolve this error. Would you like to restart it as Administrator now?", "Restart as Administrator", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                        {
+                            MainWindow.mainWindow.RestartAsAdmin();
+                        }
+                    }
+                    else
+                    {
+                        if (System.Windows.MessageBox.Show("Removing the Read-Only attribute from files in the game directory may resolve this error. Would you like to remove this attribute and restart the application now? Note this will also restart the application as Administrator.", "Remove Read-Only Attribute", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                        {
+                            // User must have read/write access to the directory for this to be allowed
+                            RemoveReadOnly(new DirectoryInfo(System.IO.Directory.GetCurrentDirectory()));
+                            MainWindow.mainWindow.RestartAsAdmin();
+                        }
+                    }
+                }
+
+                return false;
             }
             try
             {
@@ -600,8 +667,7 @@ namespace RoRLauncher
             catch (System.Exception arg2)
             {
                 this.Popup("Error unpacking 2:" + Environment.NewLine + arg2);
-                bool result = false;
-                return result;
+                return false;
             }
             return true;
         }
@@ -676,6 +742,55 @@ namespace RoRLauncher
                     this.Popup("Error creating dump files:" + Environment.NewLine + ex);
                 else
                     Error = "Error creating dump files. --NoErrors was set on the command-line, remove it and run the launcher again for the full error message.";
+            }
+        }
+
+        public void RestartAsAdmin()
+        {
+            // This is required to prevent a critical error that prevents this from finishing
+            Client._Socket.Shutdown(System.Net.Sockets.SocketShutdown.Send);
+
+            Client._Socket.Close();
+            Client._Socket.Dispose();
+            Client.Close();
+            var exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            ProcessStartInfo startInfo = new ProcessStartInfo(exeName);
+            startInfo.Verb = "runas";
+            startInfo.Arguments = Environment.CommandLine;
+            System.Diagnostics.Process.Start(startInfo);
+
+            // If something stopped Shutdown, force an unclean exit because we don't care anymore
+            try
+            {
+                Application.Current.Shutdown();
+            }
+            catch
+            {
+                Process.GetCurrentProcess().Kill();
+            }
+            return;
+        }
+
+        public bool IsAdministrator()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        public void RemoveReadOnly(DirectoryInfo directory)
+        {
+            if (directory != null)
+            {
+                directory.Attributes = FileAttributes.Normal;
+                foreach (FileInfo file in directory.GetFiles())
+                {
+                    file.Attributes = FileAttributes.Normal;
+                }
+                foreach (DirectoryInfo dir in directory.GetDirectories())
+                {
+                    RemoveReadOnly(dir);
+                }
             }
         }
     }
