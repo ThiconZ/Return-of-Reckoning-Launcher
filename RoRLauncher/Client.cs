@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using WarZoneLib;
 
 namespace RoRLauncher
 {
@@ -133,19 +134,19 @@ namespace RoRLauncher
                 System.IO.Directory.SetCurrentDirectory(currentDirectory + "\\..\\user\\");
                 System.IO.StreamReader streamReader = new System.IO.StreamReader("\\user\\UserSettings.xml");
                 string text = "";
-                string text2;
-                while ((text2 = streamReader.ReadLine()) != null)
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
                 {
-                    Client.Print(text2);
-                    int num3 = text2.IndexOf("Language id=");
-                    if (num3 > 0)
+                    Client.Print(line);
+                    int languageID = line.IndexOf("Language id=");
+                    if (languageID > 0)
                     {
-                        num3 = text2.IndexOf("\"") + 1;
-                        int num4 = text2.LastIndexOf("\"");
-                        text2 = text2.Remove(num3, num4 - num3);
-                        text2 = text2.Insert(num3, string.Concat(num));
+                        languageID = line.IndexOf("\"") + 1;
+                        int num4 = line.LastIndexOf("\"");
+                        line = line.Remove(languageID, num4 - languageID);
+                        line = line.Insert(languageID, string.Concat(num));
                     }
-                    text = text + text2 + Environment.NewLine;
+                    text = text + line + Environment.NewLine;
                 }
                 streamReader.Close();
                 System.IO.StreamWriter streamWriter = new System.IO.StreamWriter("UserSettings.xml", false);
@@ -208,7 +209,7 @@ namespace RoRLauncher
             {
                 Queue<byte[]> tcpQueue = Client.m_tcpQueue;
                 Client._Socket.EndSend(ar);
-                int num = 0;
+                int size = 0;
                 byte[] tcpSendBuffer = Client.m_tcpSendBuffer;
                 if (tcpSendBuffer != null)
                 {
@@ -216,15 +217,15 @@ namespace RoRLauncher
                     {
                         if (tcpQueue.Count > 0)
                         {
-                            num = Client.CombinePackets(tcpSendBuffer, tcpQueue, tcpSendBuffer.Length);
+                            size = Client.CombinePackets(tcpSendBuffer, tcpQueue, tcpSendBuffer.Length);
                         }
-                        if (num <= 0)
+                        if (size <= 0)
                         {
                             Client.m_sendingTcp = false;
                             return;
                         }
                     }
-                    Client._Socket.BeginSend(tcpSendBuffer, 0, num, SocketFlags.None, Client.m_asyncTcpCallback, null);
+                    Client._Socket.BeginSend(tcpSendBuffer, 0, size, SocketFlags.None, Client.m_asyncTcpCallback, null);
                 }
             }
             catch (System.Exception)
@@ -235,13 +236,13 @@ namespace RoRLauncher
 
         private static int CombinePackets(byte[] buf, Queue<byte[]> q, int length)
         {
-            int num = 0;
+            int dstOffset = 0;
             do
             {
                 byte[] array = q.Peek();
-                if (num + array.Length > buf.Length)
+                if (dstOffset + array.Length > buf.Length)
                 {
-                    if (num != 0)
+                    if (dstOffset != 0)
                     {
                         break;
                     }
@@ -249,13 +250,13 @@ namespace RoRLauncher
                 }
                 else
                 {
-                    System.Buffer.BlockCopy(array, 0, buf, num, array.Length);
-                    num += array.Length;
+                    System.Buffer.BlockCopy(array, 0, buf, dstOffset, array.Length);
+                    dstOffset += array.Length;
                     q.Dequeue();
                 }
             }
             while (q.Count > 0);
-            return num;
+            return dstOffset;
         }
 
         public static void SendTCPRaw(PacketOut packet)
@@ -367,13 +368,13 @@ namespace RoRLauncher
         {
             if (Client._Socket != null && Client._Socket.Connected)
             {
-                int num = Client._pBuf.Length;
-                if (0 >= num)
+                int length = Client._pBuf.Length;
+                if (0 >= length)
                 {
                     Client.Close();
                     return;
                 }
-                Client._Socket.BeginReceive(Client._pBuf, 0, num, SocketFlags.None, Client.ReceiveCallback, null);
+                Client._Socket.BeginReceive(Client._pBuf, 0, length, SocketFlags.None, Client.ReceiveCallback, null);
             }
         }
 
@@ -405,19 +406,13 @@ namespace RoRLauncher
                             return;
                         case 1:
                             {
-                                string @string = packet.GetString();
-                                Client.Print(@string);
+                                Client.Print(packet.GetString());
                                 Client.Close();
                                 return;
                             }
                         case 2:
                             {
-                                string string2 = packet.GetString();
-                                byte[] bytes = System.Text.Encoding.ASCII.GetBytes(string2);
-                                System.IO.FileInfo fileInfo = new System.IO.FileInfo("mythloginserviceconfig.xml");
-                                System.IO.FileStream fileStream = fileInfo.Create();
-                                fileStream.Write(bytes, 0, bytes.Length);
-                                fileStream.Close();
+                                Client.UpdateWarData(Encoding.ASCII.GetBytes(packet.GetString()));
                                 return;
                             }
                         default:
@@ -428,28 +423,28 @@ namespace RoRLauncher
                     break;
                 case Opcodes.LCR_START:
                     {
-                        byte @uint = packet.GetUint8();
-                        if (@uint == 1)
+                        byte uint8 = packet.GetUint8();
+                        if (uint8 == 1)
                         {
                             Client.Print("Invalid Username/Password");
                             MainWindow.mainWindow.EnableConnect(true);
                             return;
                         }
-                        if (@uint == 2)
+                        if (uint8 == 2)
                         {
                             Client.Print("Your account has been suspended.");
                             MainWindow.mainWindow.EnableConnect(true);
                             return;
                         }
-                        if (@uint == 3)
+                        if (uint8 == 3)
                         {
                             Client.Print("Your account is not active.");
                             MainWindow.mainWindow.EnableConnect(true);
                             return;
                         }
-                        if (@uint > 3)
+                        if (uint8 > 3)
                         {
-                            Client.Print("Invalid Response: " + @uint);
+                            Client.Print("Invalid Response: " + uint8);
                             MainWindow.mainWindow.EnableConnect(true);
                             return;
                         }
@@ -460,16 +455,14 @@ namespace RoRLauncher
                             MainWindow.KillProcessByName("WAR", false);
                             MainWindow.mainWindow.EnableConnect(false);
                             string currentDirectory = System.IO.Directory.GetCurrentDirectory();
+                            System.IO.Directory.SetCurrentDirectory(currentDirectory);
                             Client.patchExe();
-                            Client.UpdateWarData();
                             Process process = new Process();
                             process.StartInfo.FileName = "WAR.exe";
                             process.StartInfo.Arguments = " --acctname=" + System.Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(Client.User)) + " --sesstoken=" + System.Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(Client.Auth));
                             process.EnableRaisingEvents = true;
                             process.Exited += new System.EventHandler(Client.war_Exited);
                             process.Start();
-                            
-                            System.IO.Directory.SetCurrentDirectory(currentDirectory);
                             
                             // Minimize the launcher once the game process is started
                             MainWindow.mainWindow.ModifyWindowState(System.Windows.WindowState.Minimized);
@@ -584,26 +577,17 @@ namespace RoRLauncher
             }
         }
 
-        public static void UpdateWarData()
+        public static void UpdateWarData(byte[] data)
         {
             try
             {
-                System.IO.FileStream fileStream = new System.IO.FileStream(System.IO.Directory.GetCurrentDirectory() + "\\mythloginserviceconfig.xml", System.IO.FileMode.Open, System.IO.FileAccess.Read);
-                HashDictionary hashDictionary = new HashDictionary();
-                hashDictionary.AddHash(1071658597u, 882780812u, "mythloginserviceconfig.xml", 0);
-                MYPHandler.MYPHandler mYPHandler = new MYPHandler.MYPHandler("data.myp", null, null, hashDictionary);
-                mYPHandler.GetFileTable();
-                FileInArchive fileInArchive = mYPHandler.SearchForFile("mythloginserviceconfig.xml");
-                if (fileInArchive != null)
-                {
-                    if (System.IO.File.Exists(System.IO.Directory.GetCurrentDirectory() + "\\mythloginserviceconfig.xml"))
-                    {
-                        mYPHandler.ReplaceFile(fileInArchive, fileStream);
-                        fileStream.Close();
-                    }
-                }
+                FileStream fileStream = File.Open(System.IO.Directory.GetCurrentDirectory() + "\\data.myp", FileMode.Open, FileAccess.ReadWrite);
+                MYP myp = new MYP(MythicPackage.ART, (Stream)fileStream);
+                myp.UpdateFile("data/mythloginserviceconfig.xml", data);
+                myp.Save();
+                fileStream.Close();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Client.Popup("Data.myp:" + Environment.NewLine + ex.ToString());
             }

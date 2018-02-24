@@ -77,6 +77,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CRC32.cs" />
+    <Compile Include="MYP.cs" />
+    <Compile Include="MythicPackage.cs" />
     <Page Include="DebugDumper.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -141,7 +144,6 @@
   <ItemGroup>
     <EmbeddedResource Include="deps\HashDictionary.dll" />
     <EmbeddedResource Include="deps\ICSharpCode.SharpZipLib.dll" />
-    <EmbeddedResource Include="deps\MYPHandler.dll" />
     <Resource Include="icon.ico" />
     <Resource Include="Images\Background.png" />
     <Resource Include="Images\Progress_Bar_Filler.png" />

@@ -26,7 +26,7 @@ namespace RoRLauncher
 
         private XDocument doc;
 
-        private int version = 1;
+        private int version = 2;
 
         private string Password = "";
 
@@ -272,10 +272,6 @@ namespace RoRLauncher
             if (CheckForDependency("HashDictionary.dll", CheckDependencyHashes) == false)
             {
                 this.Unpack("HashDictionary.dll");
-            }
-            if (CheckForDependency("MYPHandler.dll", CheckDependencyHashes) == false)
-            {
-                this.Unpack("MYPHandler.dll");
             }
             if (CheckForDependency("ICSharpCode.SharpZipLib.dll", CheckDependencyHashes) == false)
             {
