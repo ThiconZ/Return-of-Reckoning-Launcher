@@ -3,7 +3,7 @@ This project is an attempt to provide a better, open source, alternative to the 
 
 ![Screenshot](http://i.imgur.com/YTGiy1M.png)
 
-It features the following over the current official launcher as of Apr 9 2017:
+It features the following over the current official launcher as of Feb 26 2018:
 
 * Added a minimize button to the main window
 * On successful game start, the launcher will automatically minimize
@@ -18,6 +18,7 @@ It features the following over the current official launcher as of Apr 9 2017:
     * --NoErrors will suppress most error popup windows and some error messages, but continue to give short error text messages on the main window for critical messages.
     * --CustomDeps disables dependency file checking. This will assume the user has all the required dependency files and that they will work with the launcher.
     * --CheckDepHash enables the old method of dependency file hash comparisons instead of file version comparisons to determine if an embedded dependency file needs to replace an external dependency file. This can be helpful if a user wants to make sure their external dependency files are identical to the ones that come embedded.
+    * --SkipSSLValidation will skip all SSL Validation checks during web requests. This allows the launcher to continue working like normal while the SSL Certificate for the login server is expired.
 * Bug fixes and optimizations for numerous issues including the Connect button not always working
 * Cleaned up the window interfaces from the developer perspective in visual studio (fixes some issues at the same time)
 * Uses a new Mythic Patch Handler (MYPHandler) that no longer requires Performance Counters

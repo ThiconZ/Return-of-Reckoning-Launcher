@@ -72,14 +72,14 @@
                 </TextBlock>
                 <Image x:Name="RememberMeBox" Width="9" Height="9" Canvas.Left="0" Canvas.Top="130" Source="Images/Frame_Box_Yellow.png" MouseLeftButtonDown="RememberMeBox_MouseLeftButtonDown" />
                 <Image x:Name="PasswordBackground" Width="225" Height="37" Opacity="0.22" Canvas.Left="0" Canvas.Top="82" Source="Images/Password_Background.png" />
-                <PasswordBox x:Name="PasswordTextBox" Width="225" Height="37" Canvas.Left="0" Canvas.Top="82" Background="#00FFFFFF" BorderThickness="0" FontFamily="FuturaBT-Light" FontSize="31.025" Foreground="#FFFFD847" PasswordChanged="PasswordTextBox_PasswordChanged" />
+                <PasswordBox x:Name="PasswordTextBox" Width="225" Height="37" Canvas.Left="0" Canvas.Top="82" Background="#00FFFFFF" BorderThickness="0" FontFamily="FuturaBT-Light" FontSize="31.025" Foreground="#FFFFD847" PasswordChanged="PasswordTextBox_PasswordChanged" KeyDown="LoginTextBox_KeyDown" />
                 <TextBlock x:Name="PasswordLabel" Canvas.Left="0" Canvas.Top="65" TextBlock.FontFamily="FuturaBT-Light" TextBlock.FontSize="31.025" TextBlock.Foreground="#FFFFD847" IsHyphenationEnabled="True" TextBlock.LineHeight="31.025" TextBlock.LineStackingStrategy="BlockLineHeight" Text="PASSWORD:" TextBlock.TextAlignment="Left" TextWrapping="Wrap">
                     <TextBlock.RenderTransform>
                         <MatrixTransform Matrix="0.537,0,0,0.537,0,0" />
                     </TextBlock.RenderTransform>
                 </TextBlock>
                 <Image x:Name="UsernameBackground" Width="225" Height="37" Opacity="0.22" Canvas.Left="0" Canvas.Top="17" Source="Images/Username_Background.png" />
-                <TextBox x:Name="UsernameTextBox" Width="225" Height="37" Canvas.Left="0" Canvas.Top="17" Background="#00FFFFFF" BorderThickness="0" FontFamily="FuturaBT-Light" FontSize="31.025" Foreground="#FFFFD847" />
+                <TextBox x:Name="UsernameTextBox" Width="225" Height="37" Canvas.Left="0" Canvas.Top="17" Background="#00FFFFFF" BorderThickness="0" FontFamily="FuturaBT-Light" FontSize="31.025" Foreground="#FFFFD847" KeyDown="LoginTextBox_KeyDown" />
                 <TextBlock x:Name="UsernameLabel" Canvas.Left="0" Canvas.Top="0" TextBlock.FontFamily="FuturaBT-Light" TextBlock.FontSize="31.025" TextBlock.Foreground="#FFFFD847" IsHyphenationEnabled="True" TextBlock.LineHeight="31.025" TextBlock.LineStackingStrategy="BlockLineHeight" Text="USERNAME:" TextBlock.TextAlignment="Left" TextWrapping="Wrap">
                     <TextBlock.RenderTransform>
                         <MatrixTransform Matrix="0.537,0,0,0.537,0,0" />

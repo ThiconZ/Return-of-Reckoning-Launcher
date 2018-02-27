@@ -38,6 +38,8 @@ namespace RoRLauncher
 
         public bool CheckDependencyHashes = false;
 
+        public bool SkipSSLValidation = false;
+
         internal string Error
         {
             get
@@ -63,6 +65,11 @@ namespace RoRLauncher
         {
             try
             {
+                if (SkipSSLValidation == true)
+                {
+                    // Ignore SSL Validation (typically is used when the SSL Certificate is expired and waiting to be updated)
+                    ServicePointManager.ServerCertificateValidationCallback += new System.Net.Security.RemoteCertificateValidationCallback((Sender, Certificate, Chain, sslPolicyErrors) => true);
+                }
                 this.doc = XDocument.Load("http://launcher.returnofreckoning.com/launcher.xml");
             }
             catch
@@ -328,9 +335,6 @@ namespace RoRLauncher
                 this.RememberMeBox.Source = new ImageSourceConverter().ConvertFromString("pack://application:,,,/RoRLauncher;component/Images/Frame_Box_Yellow.png") as ImageSource;
             }
 
-            // Pull status/connection information from the server
-            this.ConnectToServers();
-
             // Make sure the mainWindow is created and visible before moving onto command line options
             // Without this errors will occur from the Debug mode option
             mainWindow.Show();
@@ -338,37 +342,45 @@ namespace RoRLauncher
             string[] arguments = Environment.GetCommandLineArgs();
             foreach (string option in arguments)
             {
-                // User wants to run in debug mode to create debug dumps to report an issue
-                if (option.ToLower().Contains("--debug") == true)
+                switch (option.ToLower())
                 {
-                    CreateFullDebugDump();
-                }
-                // The user has opted to not have error popups and minimal error status messages when possible
-                // They don't want to help the launcher and report issues ;-;
-                // Some errors will still be shown in their normal states (minus the popup) because there are important errors sometimes!
-                else if (option.ToLower().Contains("--noerrors") == true)
-                {
-                    NoErrorMode = true;
-                }
-                // The user is claiming to be running custom dependency libs so we should not check if internal ones should be unpacked
-                else if (option.ToLower().Contains("--customdeps") == true)
-                {
-                    CustomDependencyMode = true;
-                }
-                // User wants to have the dependency files checked by hashes and not versions
-                else if (option.ToLower().Contains("--checkdephash") == true)
-                {
-                    CheckDependencyHashes = true;
+                    // User wants to run in debug mode to create debug dumps to report an issue
+                    case "--debug":
+                        CreateFullDebugDump();
+                        break;
+                    // The user has opted to not have error popups and minimal error status messages when possible
+                    // They don't want to help the launcher and report issues ;-;
+                    // Some errors will still be shown in their normal states (minus the popup) because there are important errors sometimes!
+                    case "--noerrors":
+                        NoErrorMode = true;
+                        break;
+                    // The user is claiming to be running custom dependency libs so we should not check if internal ones should be unpacked
+                    case "--customdeps":
+                        CustomDependencyMode = true;
+                        break;
+                    // User wants to have the dependency files checked by hashes and not versions
+                    case "--customdephash":
+                        CheckDependencyHashes = true;
+                        break;
+                    // User does not want SSL Validation to occur, SSL for server must be out of date
+                    case "--skipsslvalidation":
+                        SkipSSLValidation = true;
+                        break;
+                    default:
+                        break;
                 }
             }
 
+            // Pull status/connection information from the server
+            this.ConnectToServers();
+
             // Unpack required library dependencies to the current directory
             // NOTE: these are never cleaned up by the program - maybe it should try to delete them when closed?
-            if(CustomDependencyMode == false)
+            if (CustomDependencyMode == false)
             {
-                BackgroundWorker backgroundWorker2 = new BackgroundWorker();
-                backgroundWorker2.DoWork += new DoWorkEventHandler(this.worker_Unpack);
-                backgroundWorker2.RunWorkerAsync();
+                BackgroundWorker backgroundWorker = new BackgroundWorker();
+                backgroundWorker.DoWork += new DoWorkEventHandler(this.worker_Unpack);
+                backgroundWorker.RunWorkerAsync();
             }
         }
 
@@ -718,6 +730,19 @@ namespace RoRLauncher
             ModifyWindowState(WindowState.Minimized);
         }
 
+        private void LoginTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            // If the Enter key was pressed in either Username or Password box and Connection is allowed
+            // Perform the Connect Clicking action
+            if (e.Key == Key.Enter)
+            {
+                if (this.Connect_button.Visibility == Visibility.Visible)
+                {
+                    CONNECT_MouseLeftButtonDown(null, null);
+                }
+            }
+        }
+
         private void CreateFullDebugDump()
         {
             DebugDumper dumper = new DebugDumper();
@@ -743,18 +768,26 @@ namespace RoRLauncher
 
         public void RestartAsAdmin()
         {
-            // This is required to prevent a critical error that prevents this from finishing
-            Client._Socket.Shutdown(System.Net.Sockets.SocketShutdown.Send);
-
-            Client._Socket.Close();
-            Client._Socket.Dispose();
-            Client.Close();
+            // This is required to prevent a critical error that prevents the restart from finishing
+            try
+            {
+                Client._Socket.Shutdown(System.Net.Sockets.SocketShutdown.Send);
+                Client._Socket.Close();
+                Client._Socket.Dispose();
+                Client.Close();
+            }
+            catch{}
             var exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
             ProcessStartInfo startInfo = new ProcessStartInfo(exeName);
             startInfo.Verb = "runas";
             startInfo.Arguments = Environment.CommandLine;
+            // Close a popup window if there is one, just to be safe
+            try
+            {
+                PopupWindow.GetPopup().Close();
+            }
+            catch{}
             System.Diagnostics.Process.Start(startInfo);
-
             // If something stopped Shutdown, force an unclean exit because we don't care anymore
             try
             {
